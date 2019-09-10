@@ -3,7 +3,7 @@ import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 
 import { ProductService } from './product.service';
 import { EMPTY, Subject, combineLatest, BehaviorSubject } from 'rxjs';
-import { catchError, map, startWith } from 'rxjs/operators';
+import { catchError, map, startWith, shareReplay } from 'rxjs/operators';
 
 @Component({
   templateUrl: './product-list.component.html',

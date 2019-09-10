@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { Observable, throwError, combineLatest, Subject, BehaviorSubject, merge } from 'rxjs';
-import { catchError, tap, map, scan} from 'rxjs/operators';
+import { catchError, tap, map, scan, shareReplay } from 'rxjs/operators';
 
 import { Product } from './product';
 import { Supplier } from '../suppliers/supplier';
@@ -19,13 +19,12 @@ export class ProductService {
   private productSelectedSubject = new BehaviorSubject<number>(0);
 
   productSelectedAction$ = this.productSelectedSubject.asObservable();
+
   products$ = this.http.get<Product[]>(this.productsUrl)
     .pipe(
       tap(data => console.log('Products: ', JSON.stringify(data))),
       catchError(this.handleError)
     );
-
-
 
   productsWithCategory$ = combineLatest([
     this.products$,
@@ -39,31 +38,31 @@ export class ProductService {
         searchKey: [product.productName]
       }) as Product)
     ),
+    shareReplay(1),
   );
-
-
 
   selectedProduct$ = combineLatest([
     this.productsWithCategory$,
     this.productSelectedAction$
   ])
-  .pipe(
-    map(([products, selectedProductId]) =>
-      products.find(p => p.id === selectedProductId)),
-    tap(product => console.log('Selected Product:', product))
-  );
+    .pipe(
+      map(([products, selectedProductId]) =>
+        products.find(p => p.id === selectedProductId)),
+      tap(product => console.log('Selected Product:', product)),
+      shareReplay(1)
+    );
 
   private productInsertedSubject = new Subject<Product>();
   productInsertedAction$ = this.productInsertedSubject.asObservable();
 
   productsWithAdd$ = merge
-  (
-    this.productsWithCategory$,
-    this.productInsertedAction$
-  )
-  .pipe(
-    scan((acc: Product[], value: Product) => [...acc, value])
-  );
+    (
+      this.productsWithCategory$,
+      this.productInsertedAction$
+    )
+    .pipe(
+      scan((acc: Product[], value: Product) => [...acc, value])
+    );
 
   addProduct(newProduct?: Product) {
     newProduct = newProduct || this.fakeProduct();
@@ -71,8 +70,8 @@ export class ProductService {
   }
 
   constructor(private http: HttpClient,
-              private supplierService: SupplierService,
-              private productCategoryService: ProductCategoryService) { }
+    private supplierService: SupplierService,
+    private productCategoryService: ProductCategoryService) { }
 
   private fakeProduct() {
     return {
@@ -107,3 +106,4 @@ export class ProductService {
     this.productSelectedSubject.next(+selectedProductId);
   }
 }
+
