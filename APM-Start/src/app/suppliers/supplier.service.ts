@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { throwError, of } from 'rxjs';
-import { map, concatMap, tap, mergeMap } from 'rxjs/operators';
+import { map, concatMap, tap, mergeMap, shareReplay, catchError } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -11,13 +11,18 @@ import { map, concatMap, tap, mergeMap } from 'rxjs/operators';
 export class SupplierService {
   suppliersUrl = 'api/suppliers';
 
-  suppliersWithMap$ = of(1, 5, 8)
+  // suppliersWithMap$ = of(1, 5, 8)
+  // .pipe(
+  //   tap(id => console.log('mergetMap source Observable', id)),
+  //   mergeMap(id => this.http.get<Supplier>(`${this.suppliersUrl}/${id}`))
+  // );
+
+  suppliers$ = this.http.get<Supplier[]>(this.suppliersUrl)
   .pipe(
-    tap(id => console.log('mergetMap source Observable', id)),
-    mergeMap(id => this.http.get<Supplier>(`${this.suppliersUrl}/${id}`))
+    tap(data => console.log('suppliers', JSON.stringify(data))),
+    shareReplay(1),
+    catchError(this.handleError)
   );
-
-
 
   constructor(private http: HttpClient) {
     // this.suppliersWithMap$.subscribe(item => console.log('mergeMap result', item));
